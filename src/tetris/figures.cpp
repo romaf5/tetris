@@ -137,9 +137,11 @@ FigureSI::FigureSI() {
 std::shared_ptr<FigureWorld> FigureWorld::create(int boardWidth) {
 	auto figure = std::make_shared<FigureWorld>();
 
-	figure->m_position = {boardWidth / 2, 0};
+  figure->m_figure = Figure::build(getRandomFigureType());
+  auto N = figure->m_figure->N;
+  figure->m_position = {boardWidth / 2 - N / 2, -N};
 	figure->m_color = getRandomColor();
-	figure->m_figure = Figure::build(getRandomFigureType());
+	
 	return figure;
 }
 

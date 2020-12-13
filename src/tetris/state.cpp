@@ -17,20 +17,6 @@ State::State() {
     );
   }
 }
-
-void State::occupy_random() {
-  const int fillRows = 15;
-  for (int i = 0; i < fillRows; ++i) {
-    int row = rand() % m_height;
-    std::fill(m_buffer[row].begin(), m_buffer[row].end(), CELL_OCCUPIED);
-    std::fill(m_bufferColor[row].begin(), m_bufferColor[row].end(), getRandomColor());
-    if (rand() % 2 == 0) {
-      auto randCol = rand() % m_width;
-      m_buffer[row][randCol] = CELL_EMPTY;
-      m_bufferColor[row][randCol] = ColorVec3(0, 0, 0);
-    }
-  }
-}
   
 void State::update() {
   std::unordered_set<int> fullRows;
@@ -43,21 +29,20 @@ void State::update() {
       fullRows.insert(row);
     }
   }
-
-  int rowId = 0;
-  for (int row = 0; row < m_height; ++row) {
+  
+  int rowId = m_height - 1;
+  for (int row = m_height - 1; row >= 0; --row) {
     if (fullRows.find(row) == fullRows.end()) {
       m_buffer[rowId] = m_buffer[row];
-      m_bufferColor[rowId++] = m_bufferColor[row];
+      m_bufferColor[rowId--] = m_bufferColor[row];
     }
   }
-    
+
   for (int row = 0; row < fullRows.size(); ++row) {
-    int rowIndex = m_height - row - 1;
-    std::fill(m_buffer[rowIndex].begin(), m_buffer[rowIndex].end(), CELL_EMPTY);
+    std::fill(m_buffer[row].begin(), m_buffer[row].end(), CELL_EMPTY);
     std::fill(
-      m_bufferColor[rowIndex].begin(),
-      m_bufferColor[rowIndex].end(),
+      m_bufferColor[row].begin(),
+      m_bufferColor[row].end(),
       ColorVec3(0, 0, 0)
     );
   }
@@ -69,10 +54,13 @@ bool State::checkAction(std::shared_ptr<FigureWorld> figure) {
 
   for (int r = 0; r < figureBlock->N; ++r) {
     for (int c = 0; c < figureBlock->N; ++c) {
-      if (figureBlock->m_data[r][c] == 1) {
+      if (figureBlock->m_data[r][c] == CELL_OCCUPIED) {
         int pr = r + position.y;
         int pc = c + position.x;
-        if (pr >= m_height || pc >= m_width || m_buffer[pr][pc] == CELL_OCCUPIED) {
+        if (pc < 0) {
+          return false;
+        }
+        if ((pr >= 0) && (pr >= m_height || pc >= m_width || m_buffer[pr][pc] == CELL_OCCUPIED)) {
           return false;
         }
       }
@@ -91,27 +79,25 @@ int State::findFigureDistance(std::shared_ptr<FigureWorld> figureWorld) {
 
   auto& figure = figureWorld->m_figure;
   const auto& position = figureWorld->m_position;
-
   for (int r = 0; r < figure->N; ++r) {
     for (int c = 0; c < figure->N; ++c) {
-      if (figure->m_data[r][c] != CELL_EMPTY) {
+      if (figure->m_data[r][c] == CELL_EMPTY) {
         continue;
       }
-
+      
       int pr = r + position.y;
       int pc = c + position.x;
-
-      if (pr >= m_height || pc >= m_width) {
-        distance = 0;
+      if (pr < 0) {
         continue;
       }
-
-      int currentDistance = 0;
-      while (pr + currentDistance + 1 < m_height && m_buffer[pr + currentDistance + 1][pc] == CELL_EMPTY) {
+      
+      int currentDistance = 1;
+      while (pr + currentDistance < m_height
+             && m_buffer[pr + currentDistance][pc] == CELL_EMPTY) {
         currentDistance++;
       }
 
-      distance = std::min(distance, currentDistance);
+      distance = std::min(distance, currentDistance - 1);
     }
   }
   return distance;
@@ -135,13 +121,16 @@ void State::checkIfFigureStopped(std::shared_ptr<FigureWorld>& figureWorld) {
 
       int pr = r + position.y;
       int pc = c + position.x;
+      
+      if (pr < 0 || pc < 0) {
+        continue;
+      }
   
       if (pr + 1 >= m_height || m_buffer[pr + 1][pc] == CELL_OCCUPIED) {
         stop = true;
       }
     }
   }
-    
 
   if (!stop) {
     return;
@@ -155,11 +144,16 @@ void State::checkIfFigureStopped(std::shared_ptr<FigureWorld>& figureWorld) {
 
       int pr = r + position.y;
       int pc = c + position.x;
-      m_bufferColor[pr][pc] = figureWorld->m_color;
-      m_buffer[pr][pc] = CELL_OCCUPIED;
+
+      if (pr < 0 || pc < 0) {
+        gameFinished = true;
+      } else {
+        m_bufferColor[pr][pc] = figureWorld->m_color;
+        m_buffer[pr][pc] = CELL_OCCUPIED;
+      }
     }
   }
-  figure = nullptr;
+  figureWorld = nullptr;
 }
   
 
@@ -170,20 +164,18 @@ void State::step(std::shared_ptr<FigureWorld>& figure, const GameAction action) 
   auto& position = figure->m_position;
   switch (action) {
     case GameAction::MoveLeft:
-      if (position.x > 0) {
-        position.x -= 1;
-        if (!checkAction(figure)) {
-          position.x += 1;
-        }
+      position.x -= 1;
+      if (!checkAction(figure)) {
+        position.x += 1;
       }
+    
       break;
     case GameAction::MoveRight:
-      if (position.x + 1 < m_width) {
-        position.x += 1;
-        if (!checkAction(figure)) {
-          position.x -= 1;
-        }
+      position.x += 1;
+      if (!checkAction(figure)) {
+        position.x -= 1;
       }
+    
       break;
     
     case GameAction::SpeedUp:
@@ -214,13 +206,5 @@ void State::step(std::shared_ptr<FigureWorld>& figure, const GameAction action) 
   checkIfFigureStopped(figure);
 } 
 
-void State::drawCL() {
-  for (int row = 0; row < m_height; ++row) {
-    for (int col = 0; col < m_width; ++col) {
-      std::cout << m_buffer[m_height - row - 1][col];
-    }
-    std::cout << '\n';
-  }
-}
 
 }

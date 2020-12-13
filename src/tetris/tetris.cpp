@@ -11,6 +11,8 @@
 
 namespace tetris {
 
+const int FPS = 10;
+
 class Game {
 public:
   Game() {
@@ -24,8 +26,21 @@ public:
 
   void loop() {
     while (!m_finished) {
+      auto start = SDL_GetPerformanceCounter();
       step();
+      auto end = SDL_GetPerformanceCounter();
+
+      float elapsedMS = (end - start) / (float)SDL_GetPerformanceFrequency() * 1000.0f;
+      std::cout << "Elapsed ms: " << elapsedMS << '\n';
+      
+      float delay = 1000.0 / FPS - elapsedMS;
+      SDL_Delay(std::max(0, int(delay)));
+      
+      if (m_board->gameFinished) {
+        m_finished = true;
+      }
     }
+    std::cout << "Game over!\n";
   }
 
   void step() {
@@ -43,14 +58,17 @@ public:
 
     // DEBUG CODE
     printAction(action);
-  
+
     m_board->step(m_figure, action);
+    m_board->update();
     m_world->visualize(m_figure);
+    
   }
 
 private:
   bool m_finished { false };
 
+  int m_iteration = 0;
   std::shared_ptr<State> m_board;
   std::unique_ptr<SDL2Window> m_world;
   std::shared_ptr<FigureWorld> m_figure;
@@ -58,34 +76,8 @@ private:
 
 };
 
-void test_state() {
-  tetris::State state;
-  state.occupy_random();
-  state.drawCL();
-  std::cout << ">>>>>>>>>>>>>>" << '\n';
-  state.update();
-  state.drawCL();
-}
-
-void test_figures() {
-  auto figure = tetris::Figure::build(tetris::FigureType::I);
-  figure->print();
-  figure->rotate();
-  figure->print();
-}
-
-void test_game() {
+int main(int argc, const char * argv[]) {
   auto client = std::make_unique<tetris::Game>();
   client->loop();
-}
-
-const bool enableTests = true;
-
-int main(int argc, const char * argv[]) {
-  if (enableTests) {
-    test_state();
-    test_figures();
-    test_game();
-  }
   return 0;
 }

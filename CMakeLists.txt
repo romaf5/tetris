@@ -17,8 +17,13 @@ find_package(OpenGL REQUIRED)
 add_executable(BenchmarkTest src/benchmark_test.cpp)
 target_link_libraries(BenchmarkTest glew glfw benchmark OpenGL::GL)
 
-add_executable(sdl2_tetris src/tetris/debug_vis.cpp
+add_executable(sdl2_tetris 
+    src/tetris/tetris.cpp
     src/tetris/state.cpp
     src/tetris/figures.cpp
-    src/tetris/utils.cpp)
+    src/tetris/utils.cpp
+    src/tetris/utils.hpp
+    src/tetris/figures.hpp
+    src/tetris/state.hpp
+    src/tetris/sdl2window.hpp)
 target_link_libraries(sdl2_tetris glew glfw benchmark OpenGL::GL SDL2)

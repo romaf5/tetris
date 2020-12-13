@@ -7,12 +7,12 @@
 #include <glm/vec3.hpp>
 
 
-typedef glm::i8vec3 ColorVec3;
+typedef glm::ivec3 ColorVec3;
 
 namespace tetris {
 
-constexpr uint8_t CELL_EMPTY = 0;
-constexpr uint8_t CELL_OCCUPIED = 1;
+constexpr int CELL_EMPTY = 0;
+constexpr int CELL_OCCUPIED = 1;
 
 enum class FigureType : uint8_t {
   I,

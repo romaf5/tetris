@@ -86,7 +86,7 @@ public:
 
     for (int r = 0; r < m_board->m_height; ++r) {
       for (int c = 0; c < m_board->m_width; ++c) {
-        drawRectangle(r, c);   
+        drawRectangle(r, c, m_board->m_buffer[r][c], m_board->m_bufferColor[r][c]);
       }
     }
 
@@ -101,19 +101,17 @@ private:
   glm::vec2 worldToScreen(glm::vec2 p) {
     glm::vec2 r;
     r.x = (float)p.x / m_board->m_width * m_windowWidth;
-    r.y = (1 - (float)p.y / m_board->m_height) * m_windowHeight;
+    r.y = (float)p.y / m_board->m_height * m_windowHeight;
     return r;
   }
 
-  void drawRectangle(int r, int c) {
-    if (m_board->m_buffer[r][c] == CELL_EMPTY) {
+  void drawRectangle(int r, int c, int cell, ColorVec3 color) {
+    if (cell == CELL_EMPTY) {
       return;
     }
     
     auto tl = worldToScreen({c, r});
     auto br = worldToScreen({c + 1, r + 1});
-    
-    const auto color = m_board->m_bufferColor[r][c];
     
     SDL_Rect dr;
     dr.x = tl.x;
@@ -149,16 +147,27 @@ private:
     }
   }
 
-  void drawFigure(std::shared_ptr<FigureWorld> figure) {
-    if (!figure) {
+  void drawFigure(std::shared_ptr<FigureWorld> figureWorld) {
+    if (!figureWorld) {
       std::cout << "No figure\n";
       return;
     }
-
-    std::cout << "[drawFigure] TODO: implement figure!\n";
+    
+    const auto& figure = figureWorld->m_figure;
+    const auto& position = figureWorld->m_position;
+    
+    for (int r = 0; r < figure->N; ++r) {
+      for (int c = 0; c < figure->N; ++c) {
+        if (figure->m_data[r][c] == CELL_EMPTY) {
+          continue;
+        }
+        
+        drawRectangle(r + position.y, c + position.x, figure->m_data[r][c], figureWorld->m_color);
+      }
+    }
   }
 
-  int m_windowWidth = 250;
+  int m_windowWidth = 300;
   int m_windowHeight = 600;
 
   SDL_Window* m_window = nullptr;

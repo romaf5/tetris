@@ -15,7 +15,7 @@ public:
   void print();
   
   int N = 2;
-  std::vector<std::vector<uint8_t>> m_data;
+  std::vector<std::vector<int>> m_data;
   FigureType m_type { FigureType::I };
 private:
   virtual void rotateLeft();
@@ -62,7 +62,7 @@ class FigureWorld {
 public:
   static std::shared_ptr<FigureWorld> create(int boardWidth);
   
-  glm::i8vec2 m_position;
+  glm::ivec2 m_position;
   ColorVec3 m_color;
   std::shared_ptr<Figure> m_figure;
 };
